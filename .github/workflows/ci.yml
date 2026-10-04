@@ -1,0 +1,37 @@
+name: 格式检查与集成测试
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 检出源码
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: 安装 typstyle
+        run: |
+          curl --fail --location --retry 3 \
+            https://github.com/typstyle-rs/typstyle/releases/download/v0.15.1/typstyle-x86_64-unknown-linux-musl \
+            --output "$RUNNER_TEMP/typstyle"
+          echo "7aaa0b0fe54ee859c2e138c3f8d307960b06fe072ab9eb14bcf6ab50b5fe9c86  $RUNNER_TEMP/typstyle" | sha256sum --check
+          chmod +x "$RUNNER_TEMP/typstyle"
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+      - name: 检查 Typst 源码格式
+        run: typstyle --check .
+      - name: 安装 Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.11"
+      - name: 安装 Typst
+        uses: typst-community/setup-typst@fee4b65b091cc546f02ce3be15fad8760f38a108 # v5
+        with:
+          typst-version: "0.15.1"
+      - name: 运行集成测试
+        run: python tests/run.py
